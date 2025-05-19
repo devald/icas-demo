@@ -34,5 +34,5 @@
 
 | Name | Description |
 |------|-------------|
-| <a name="output_oidc_provider_arn"></a> [oidc\_provider\_arn](#output\_oidc\_provider\_arn) | n/a |
-| <a name="output_oidc_role_arns"></a> [oidc\_role\_arns](#output\_oidc\_role\_arns) | n/a |
+| <a name="output_oidc_provider_arn"></a> [oidc\_provider\_arn](#output\_oidc\_provider\_arn) | Outputs the ARN of the AWS IAM OpenID Connect provider configured with GitHub. |
+| <a name="output_oidc_role_arns"></a> [oidc\_role\_arns](#output\_oidc\_role\_arns) | Returns a map of ARNs for the IAM roles associated with the specified OIDC provider, keyed by role name. These roles are defined in `aws_iam_role.oidc_roles`. |
