@@ -66,7 +66,7 @@ provider "aws" {
       Environment = "${local.environment}"
       Region      = "${local.region}"
       Component   = "${local.component}"
-      ManagedBy   = "terragrunt"
+      ManagedBy   = "terragrunt/terraform"
     }
   }
 }
