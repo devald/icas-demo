@@ -1,0 +1,30 @@
+name: Deploy Infrastructure
+'on':
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          nix_path: 'nixpkgs=channel:nixos-unstable'
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: 'arn:aws:iam::767140398543:role/github-oidc-terraform'
+          aws-region: eu-central-1
+      - name: Validate infrastructure
+        run: 'nix run .#validate'
+      - name: Apply infrastructure
+        run: 'nix run .#apply'
