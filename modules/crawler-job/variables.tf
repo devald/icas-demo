@@ -1,47 +1,62 @@
 variable "eks_cluster_name" {
   description = "Name of the EKS cluster to connect to."
   type        = string
-
-  validation {
-    condition     = length(var.eks_cluster_name) > 0
-    error_message = "EKS cluster name must not be empty."
-  }
 }
 
 variable "eks_cluster_endpoint" {
   description = "API server endpoint URL of the EKS cluster."
   type        = string
-
-  validation {
-    condition     = can(regex("^https://", var.eks_cluster_endpoint))
-    error_message = "EKS cluster endpoint must start with 'https://'."
-  }
 }
 
-variable "eks_ca_data" {
+variable "eks_ca_authority_data" {
   description = "Base64-encoded certificate authority data for the EKS cluster."
   type        = string
-
-  validation {
-    condition     = can(base64decode(var.eks_ca_data))
-    error_message = "EKS CA data must be valid base64-encoded string."
-  }
 }
 
-variable "s3_bucket_name" {
-  description = "Name of the S3 bucket where the crawler job will upload the downloaded HTML content."
+variable "name" {
+  description = "Base name used for naming resources like service accounts and jobs."
   type        = string
+}
 
-  validation {
-    condition     = can(regex("^[a-z0-9.-]{3,63}$", var.s3_bucket_name))
-    error_message = "S3 bucket name must be 3–63 characters long, lowercase, and may include numbers, dots, and hyphens."
-  }
+variable "namespace" {
+  description = "Kubernetes namespace for the service account and job."
+  type        = string
+}
+
+variable "service_account_name" {
+  description = "Name of the Kubernetes service account."
+  type        = string
+}
+
+variable "image" {
+  description = "Docker image used in the crawler job container."
+  type        = string
+  default     = "amazon/aws-cli:2.27.17"
+}
+
+variable "oidc_provider_arn" {
+  description = "ARN of the OIDC provider."
+  type        = string
+}
+
+variable "oidc_provider" {
+  description = "OIDC provider hostname (e.g., oidc.eks.eu-central-1.amazonaws.com/id/EXAMPLE)."
+  type        = string
+}
+
+variable "s3_bucket_id" {
+  description = "S3 bucket name for crawler output."
+  type        = string
+}
+
+variable "s3_bucket_arn" {
+  description = "S3 bucket ARN."
+  type        = string
 }
 
 variable "target_website_url" {
-  description = "The URL of the website that the crawler job will download and upload to the S3 bucket."
+  description = "URL to be downloaded by the crawler."
   type        = string
-  default     = "https://terragrunt.gruntwork.io"
 
   validation {
     condition     = can(regex("^https?://", var.target_website_url))

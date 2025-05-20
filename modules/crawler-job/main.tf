@@ -1,53 +1,126 @@
-provider "kubernetes" {
-  host                   = var.eks_cluster_endpoint
-  cluster_ca_certificate = base64decode(var.eks_ca_data)
-  exec {
-    api_version = "client.authentication.k8s.io/v1beta1"
-    args        = ["eks", "get-token", "--cluster-name", var.eks_cluster_name]
-    command     = "aws"
+locals {
+  common_labels = {
+    "app.kubernetes.io/managed-by" = "terraform"
   }
 }
 
-resource "kubernetes_job_v1" "crawler" {
-  metadata {
-    name = "crawler"
-    labels = {
-      app = "web-crawler"
+# IAM policy for S3 access
+data "aws_iam_policy_document" "crawler_s3_policy" {
+  statement {
+    sid       = "AllowListBucket"
+    effect    = "Allow"
+    actions   = ["s3:ListBucket"]
+    resources = [var.s3_bucket_arn]
+  }
+
+  statement {
+    sid       = "AllowObjectAccess"
+    effect    = "Allow"
+    actions   = ["s3:GetObject", "s3:PutObject"]
+    resources = ["${var.s3_bucket_arn}/*"]
+  }
+}
+
+resource "aws_iam_policy" "crawler_s3_upload_policy" {
+  name        = "${var.name}-upload-policy"
+  description = "Policy allowing upload to ${var.s3_bucket_id}"
+  policy      = data.aws_iam_policy_document.crawler_s3_policy.json
+}
+
+# OIDC trust policy for IRSA
+data "aws_iam_policy_document" "crawler_oidc_trust" {
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "Federated"
+      identifiers = [var.oidc_provider_arn]
     }
+
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "${var.oidc_provider}:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "${var.oidc_provider}:sub"
+      values   = ["system:serviceaccount:${var.namespace}:${var.service_account_name}"]
+    }
+  }
+}
+
+# IAM role for IRSA
+resource "aws_iam_role" "crawler_irsa_role" {
+  name               = "${var.name}-irsa-role"
+  assume_role_policy = data.aws_iam_policy_document.crawler_oidc_trust.json
+}
+
+resource "aws_iam_role_policy_attachment" "crawler_s3_attach" {
+  role       = aws_iam_role.crawler_irsa_role.name
+  policy_arn = aws_iam_policy.crawler_s3_upload_policy.arn
+}
+
+# Namespace
+resource "kubernetes_namespace_v1" "crawler_ns" {
+  metadata {
+    name   = var.namespace
+    labels = local.common_labels
+  }
+}
+
+# Kubernetes service account
+resource "kubernetes_service_account_v1" "crawler_sa" {
+  metadata {
+    name      = var.service_account_name
+    namespace = kubernetes_namespace_v1.crawler_ns.metadata[0].name
+    labels    = local.common_labels
+    annotations = {
+      "eks.amazonaws.com/role-arn" = aws_iam_role.crawler_irsa_role.arn
+    }
+  }
+}
+
+# Kubernetes Job
+resource "kubernetes_job_v1" "crawler_job" {
+  metadata {
+    name      = "${var.name}-job"
+    namespace = kubernetes_namespace_v1.crawler_ns.metadata[0].name
+    labels    = local.common_labels
   }
 
   spec {
-    backoff_limit = 0
+    backoff_limit              = 1
+    ttl_seconds_after_finished = 300
 
     template {
       metadata {
         labels = {
-          app = "web-crawler"
+          app = "crawler"
         }
       }
 
       spec {
-        restart_policy = "Never"
+        restart_policy       = "Never"
+        service_account_name = kubernetes_service_account_v1.crawler_sa.metadata[0].name
 
         container {
-          name    = "crawler"
-          image   = "amazon/aws-cli:2.27.17"
+          name  = "crawler"
+          image = var.image
+
           command = ["/bin/sh", "-c"]
           args = [
             <<-EOT
-              curl -s ${var.target_website_url} -o /tmp/page.html && \
-              aws s3 cp /tmp/page.html s3://${var.s3_bucket_name}/page.html
+              set -e
+              curl -s ${var.target_website_url} -o /tmp/page.html
+              aws s3 cp /tmp/page.html s3://${var.s3_bucket_id}/page-$(date +%s).html || exit 1
             EOT
           ]
         }
       }
     }
-  }
-
-  wait_for_completion = true
-  timeouts {
-    create = "2m"
-    delete = "2m"
-    update = "2m"
   }
 }
