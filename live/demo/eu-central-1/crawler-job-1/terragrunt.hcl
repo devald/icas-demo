@@ -18,6 +18,8 @@ dependency "eks-1" {
     cluster_name                       = "fake-cluster-name"
     cluster_endpoint                   = "https://fake-cluster-endpoint"
     cluster_certificate_authority_data = base64encode("fake-ca-data")
+    oidc_provider_arn                  = "arn:aws:iam::123456789012:oidc-provider/oidc.eks.fake-region.amazonaws.com/id/FAKEOIDC"
+    oidc_provider                      = "oidc.eks.fake-region.amazonaws.com/id/FAKEOIDC"
   }
 }
 
@@ -25,7 +27,8 @@ dependency "crawler-s3-1" {
   config_path = "../crawler-s3-1"
 
   mock_outputs = {
-    s3_bucket_id = "fake-bucket-name"
+    s3_bucket_id  = "fake-bucket-name"
+    s3_bucket_arn = "arn:aws:s3:::mock-crawler-bucket"
   }
 }
 
