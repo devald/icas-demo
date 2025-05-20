@@ -17,4 +17,7 @@ inputs = {
 
   control_object_ownership = true
   object_ownership         = "ObjectWriter"
+
+  # Allow bucket deletion with objects for end-to-end testing purposes
+  force_destroy = true
 }
