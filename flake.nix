@@ -1,46 +1,92 @@
 {
-  description = "Terraform and Terragrunt development environment";
+  description = "Minimal Terragrunt-based Infra Flake";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-utils.url = "github:numtide/flake-utils";
   };
 
   outputs =
-    { self, nixpkgs, ... }:
-    let
-      system = "x86_64-linux";
-    in
     {
-      devShells."${system}".default =
-        let
-          pkgs = import nixpkgs {
-            inherit system;
-            config.allowUnfree = true;
-          };
-        in
-        pkgs.mkShell {
-          packages = with pkgs; [
-            terraform
-            terragrunt
-            awscli2
-            jq
-          ];
+      self,
+      nixpkgs,
+      flake-utils,
+    }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
+      let
+        pkgs = import nixpkgs {
+          inherit system;
+          config.allowUnfree = true;
+        };
 
+        tools = with pkgs; [
+          terraform
+          terragrunt
+          awscli2
+          kubectl
+        ];
+
+        envVarsScript = ''
+          export TG_PROVIDER_CACHE=1
+          export AWS_PROFILE=demo-profile
+          export AWS_REGION=eu-central-1
+        '';
+      in
+      {
+        devShells.default = pkgs.mkShell {
+          name = "terragrunt-shell";
+          packages = tools;
           shellHook = ''
-            export TG_PROVIDER_CACHE=1
-            export AWS_PROFILE=demo-profile
-            export AWS_REGION=eu-central-1
+            ${envVarsScript}
 
-            echo "Welcome to the Terraform + Terragrunt development environment!"
-
-            echo "Terraform Version:"
-            terraform --version
-
-            echo "Terragrunt Version:"
-            terragrunt --version
+            echo "🧪 Welcome to the Terraform + Terragrunt development environment!"
+            echo "→ Terraform Version: ${pkgs.terraform.version}"
+            echo "→ Terragrunt Version: ${pkgs.terragrunt.version}"
 
             exec ${pkgs.zsh}/bin/zsh
           '';
         };
-    };
+
+        apps.validate = flake-utils.lib.mkApp {
+          drv = pkgs.writeShellApplication {
+            name = "validate-terragrunt";
+            runtimeInputs = tools;
+            text = ''
+              ${envVarsScript}
+
+              echo "→ Running Terraform and Terragrunt validation..."
+
+              echo "→ terraform fmt -recursive -check"
+              ${pkgs.terraform}/bin/terraform fmt -recursive -check
+
+              echo "→ terragrunt hcl fmt --check"
+              ${pkgs.terragrunt}/bin/terragrunt hcl fmt --check
+
+              echo "→ terragrunt hcl validate"
+              hcl_output=$(${pkgs.terragrunt}/bin/terragrunt hcl validate 2>&1)
+              echo "$hcl_output"
+              echo "$hcl_output" | grep -q "Error" && exit 1
+
+              echo "✅ Validation completed successfully."
+            '';
+          };
+        };
+
+        apps.apply = flake-utils.lib.mkApp {
+          drv = pkgs.writeShellApplication {
+            name = "apply-terragrunt";
+            runtimeInputs = tools;
+            text = ''
+              ${envVarsScript}
+
+              echo "→ Running: terragrunt run --all apply"
+              ${pkgs.terragrunt}/bin/terragrunt run --all apply --non-interactive
+
+              echo "🚀 Apply completed successfully."
+            '';
+          };
+        };
+      }
+    );
 }
