@@ -2,7 +2,7 @@ terraform {
   source = "github.com/terraform-aws-modules/terraform-aws-vpc?ref=v5.21.0"
 }
 
-include {
+include "root" {
   path   = find_in_parent_folders("root.hcl")
   expose = true
 }
@@ -25,7 +25,7 @@ dependency "aws-data" {
 
 locals {
   cidr = "10.0.0.0/16"
-  name = "${include.locals.environment}-${include.locals.component}"
+  name = "${include.root.locals.environment}-${include.root.locals.component}"
 }
 
 inputs = {

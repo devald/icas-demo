@@ -2,13 +2,13 @@ terraform {
   source = "github.com/terraform-aws-modules/terraform-aws-s3-bucket?ref=v4.8.0"
 }
 
-include {
+include "root" {
   path   = find_in_parent_folders("root.hcl")
   expose = true
 }
 
 locals {
-  name = format("%s-%s-%s", include.locals.environment, include.locals.component, get_aws_account_id())
+  name = format("%s-%s-%s", include.root.locals.environment, include.root.locals.component, get_aws_account_id())
 }
 
 inputs = {

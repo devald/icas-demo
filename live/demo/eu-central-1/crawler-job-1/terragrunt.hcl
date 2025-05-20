@@ -2,7 +2,7 @@ terraform {
   source = "${get_path_to_repo_root()}/modules/crawler-job"
 }
 
-include {
+include "root" {
   path   = find_in_parent_folders("root.hcl")
   expose = true
 }
@@ -33,7 +33,7 @@ dependency "crawler-s3-1" {
 }
 
 locals {
-  name = "${include.locals.environment}-${include.locals.component}"
+  name = "${include.root.locals.environment}-${include.root.locals.component}"
 }
 
 inputs = {
