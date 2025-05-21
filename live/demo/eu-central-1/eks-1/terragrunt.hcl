@@ -8,7 +8,7 @@ include "root" {
 }
 
 dependencies {
-  paths = ["../vpc-1"]
+  paths = ["../vpc-1", "../github-oidc"]
 }
 
 dependency "vpc-1" {
@@ -24,6 +24,16 @@ dependency "vpc-1" {
   }
 }
 
+dependency "github-oidc" {
+  config_path = "../github-oidc"
+
+  mock_outputs = {
+    oidc_role_arns = {
+      "github-oidc-terraform" = "arn:aws:iam::000000000000:role/github-oidc-terraform"
+    }
+  }
+}
+
 locals {
   name = "${include.root.locals.environment}-${include.root.locals.component}"
 }
@@ -34,8 +44,6 @@ inputs = {
 
   cluster_endpoint_public_access = true
 
-  enable_cluster_creator_admin_permissions = true
-
   cluster_compute_config = {
     enabled    = true
     node_pools = ["general-purpose"]
@@ -43,4 +51,31 @@ inputs = {
 
   vpc_id     = dependency.vpc-1.outputs.vpc_id
   subnet_ids = dependency.vpc-1.outputs.private_subnets
+
+  access_entries = {
+    github-oidc = {
+      principal_arn = dependency.github-oidc.outputs.oidc_role_arns["github-oidc-terraform"]
+
+      policy_associations = {
+        github-oidc = {
+          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          access_scope = {
+            type = "cluster"
+          }
+        }
+      }
+    }
+    admin-user = {
+      principal_arn = "arn:aws:iam::767140398543:user/devald-tari-icas"
+
+      policy_associations = {
+        admin-user = {
+          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          access_scope = {
+            type = "cluster"
+          }
+        }
+      }
+    }
+  }
 }
