@@ -32,8 +32,6 @@ locals {
   environment = local.path_parts[1]
   region      = local.path_parts[2]
   component   = local.path_parts[3]
-
-  aws_profile = "${local.environment}-profile"
 }
 
 remote_state {
@@ -59,7 +57,6 @@ generate "provider_aws" {
   contents  = <<EOF
 provider "aws" {
   region  = "${local.region}"
-  profile = "${local.aws_profile}"
 
   default_tags {
     tags = {
