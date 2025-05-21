@@ -18,10 +18,8 @@ inputs = {
         "ec2:*",
         "s3:*",
         "eks:*",
-        "iam:CreateServiceLinkedRole",
-        "iam:PassRole",
-        "iam:GetRole",
-        "iam:ListRoles"
+        "iam:*",
+        "logs:*"
       ]
     },
     {
