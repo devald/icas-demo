@@ -35,7 +35,7 @@
             export AWS_REGION=eu-central-1
             echo "🧭 Using local AWS profile: $AWS_PROFILE"
           else
-            echo "⚙️  CI detected – skipping AWS_PROFILE export"
+            echo "⚙️ CI detected – skipping AWS_PROFILE export"
           fi
         '';
       in
