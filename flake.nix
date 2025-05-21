@@ -28,9 +28,8 @@
         ];
 
         envVarsScript = ''
-          export TG_PROVIDER_CACHE=1
-
           if [ "''${CI:-}" != "true" ]; then
+            export TG_PROVIDER_CACHE=1
             export AWS_PROFILE=demo-profile
             export AWS_REGION=eu-central-1
             echo "🧭 Using local AWS profile: $AWS_PROFILE"
