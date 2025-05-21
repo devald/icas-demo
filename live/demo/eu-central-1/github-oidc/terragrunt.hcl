@@ -16,6 +16,7 @@ inputs = {
         "sts:GetCallerIdentity",
         "s3:*",
         "iam:*",
+        "kms:*",
         "logs:*",
         "eks:*",
         "ec2:*",
