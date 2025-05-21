@@ -14,6 +14,7 @@ inputs = {
       github_repo  = "icas-demo"
       iam_actions = [
         "sts:GetCallerIdentity",
+        "dynamodb:*",
         "ec2:*",
         "s3:*",
         "eks:*",
