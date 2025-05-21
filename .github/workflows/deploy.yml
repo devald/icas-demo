@@ -57,5 +57,5 @@ jobs:
           aws-region: eu-central-1
       - name: Validate infrastructure
         run: nix run .#validate
-      - name: Apply infrastructure
-        run: nix run .#apply
+      # - name: Apply infrastructure
+      #   run: nix run .#apply

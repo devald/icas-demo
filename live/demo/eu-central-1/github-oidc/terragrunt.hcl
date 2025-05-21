@@ -15,15 +15,8 @@ inputs = {
       iam_actions = [
         "sts:GetCallerIdentity",
         "s3:*",
-        "iam:PassRole",
-        "iam:ListRoles",
-        "iam:GetRole",
-        "iam:CreateServiceLinkedRole",
-        "iam:GetPolicy",
-        "iam:GetOpenIDConnectProvider",
-        "iam:ListOpenIDConnectProviders",
-        "iam:ListRolePolicies",
-        "logs:DescribeLogGroups",
+        "iam:*",
+        "logs:*",
         "eks:*",
         "ec2:*",
         "dynamodb:*"
