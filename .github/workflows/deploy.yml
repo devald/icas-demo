@@ -54,6 +54,9 @@ jobs:
           tg_version: ${{ env.tg_version }}
           tg_command: hcl validate
 
+      - name: test
+        run: which aws
+
       - name: Terragrunt plan
         uses: gruntwork-io/terragrunt-action@v2
         with:
