@@ -19,7 +19,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/terragrunt
-          key: terragrunt-${{ runner.os }}-${{ hashFiles('**/*.hcl') }}
+          key: terragrunt-${{ runner.os }}-${{ hashFiles('**/.terraform.lock.hcl') }}
           restore-keys: |
             terragrunt-${{ runner.os }}-
       - name: Nix Quick Install
