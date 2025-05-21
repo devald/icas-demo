@@ -14,12 +14,19 @@ inputs = {
       github_repo  = "icas-demo"
       iam_actions = [
         "sts:GetCallerIdentity",
-        "dynamodb:*",
-        "ec2:*",
         "s3:*",
+        "iam:PassRole",
+        "iam:ListRoles",
+        "iam:GetRole",
+        "iam:CreateServiceLinkedRole",
+        "iam:GetPolicy",
+        "iam:GetOpenIDConnectProvider",
+        "iam:ListOpenIDConnectProviders",
+        "iam:ListRolePolicies",
+        "logs:DescribeLogGroups",
         "eks:*",
-        "iam:*",
-        "logs:*"
+        "ec2:*",
+        "dynamodb:*"
       ]
     },
     {
