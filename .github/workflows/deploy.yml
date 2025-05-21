@@ -6,19 +6,22 @@ name: Deploy Infrastructure
   pull_request:
     branches:
       - main
+env:
+  TG_PROVIDER_CACHE_DIR: ${{ github.workspace }}/.cache
 jobs:
   deploy:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
       contents: read
+      actions: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Cache
         uses: actions/cache@v4
         with:
-          path: ~/.cache/terragrunt
+          path: ${{ env.TG_PROVIDER_CACHE_DIR }}
           key: terragrunt-${{ runner.os }}-${{ hashFiles('**/.terraform.lock.hcl') }}
           restore-keys: |
             terragrunt-${{ runner.os }}-
