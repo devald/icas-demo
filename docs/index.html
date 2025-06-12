@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Infrastructure as Code</title>
+<meta name="author" content="Dévald Tari"/>
+<meta name="description" content=""/>
+<meta name="keywords" content=""/>
+<style type="text/css">
+.underline { text-decoration: underline; }
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.2.1/dist/reveal.css"/>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.2.1/dist/theme/solarized.css" id="theme"/>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/styles/base16/solarized-light.min.css"/></head>
+<body>
+<div class="reveal">
+<div class="slides">
+<section id="sec-title-slide"><h1 class="title">Infrastructure as Code</h1><p class="subtitle"></p>
+<h2 class="author">Dévald Tari</h2><h2 class="date">2025-06-06 Fri 13:00</h2>
+</section>
+<section id="sec-table-of-contents"><div id="table-of-contents" role="doc-toc">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents" role="doc-toc">
+<ul>
+<li><a href="#/slide-org82a58d5">Welcome</a></li>
+<li><a href="#/slide-org2d5aaca">Problem Overview</a></li>
+<li><a href="#/slide-org84a51d3">Architecture at a Glance</a></li>
+<li><a href="#/slide-org70a69cc">Infrastructure Management</a></li>
+<li><a href="#/slide-org5c4d783">Continuous Deployment</a></li>
+<li><a href="#/slide-orgb29205a">Infrastructure Modules</a></li>
+<li><a href="#/slide-org597d764">Developer Experience</a></li>
+<li><a href="#/slide-orgf710189">Presentation as Code</a></li>
+<li><a href="#/slide-org7ff6091">Consulting Value</a></li>
+<li><a href="#/slide-orge0816e3">Summary &amp; Q&amp;A</a></li>
+</ul>
+</div>
+</div>
+</section>
+<section>
+<section id="slide-org82a58d5">
+<h2 id="org82a58d5">Welcome</h2>
+<p>
+Welcome, and thank you for the opportunity to present my Infrastructure as Code demo.
+</p>
+
+<p>
+This solution is structured with a client-facing mindset, prioritizing clarity, automation, scalability, and practical consulting value.
+</p>
+
+<img src="https://avatars.githubusercontent.com/u/13199158"
+     alt="Dévald Tari"
+     style="display: block; margin-left: auto; margin-right: auto; border-radius: 50%; width: 150px; background-color: #fdf6e3; padding: 6px; box-shadow: 0 0 8px rgba(0,0,0,0.1);" />
+
+<p>
+Dévald Tari
+</p>
+
+<aside class="notes">
+<p>
+Hello, I’m Dévald Tari. In this short presentation, I’ll walk you through a production-grade Infrastructure-as-Code solution. It reflects my consulting mindset: clarity, scalability, and automation.
+</p>
+
+</aside>
+</section>
+</section>
+<section>
+<section id="slide-org2d5aaca">
+<h2 id="org2d5aaca">Problem Overview</h2>
+<div class="outline-text-2" id="text-org2d5aaca">
+</div>
+</section>
+<section id="slide-orgfbedaee">
+<h3 id="orgfbedaee">Task Goals</h3>
+<p>
+The client expects a modular, maintainable, and cloud-native solution to run a one-time web crawler job in AWS.
+</p>
+
+<p>
+This solution follows infrastructure-as-code best practices and is presented in the same way I would deliver it to a client.
+</p>
+
+<aside class="notes">
+<p>
+Highlight the consulting expectation — this is more than just tech; it's about demonstrating professionalism, modularity, and client-readiness.
+</p>
+
+</aside>
+</section>
+<section id="slide-org7f776e8">
+<h3 id="org7f776e8">Requirements Recap</h3>
+<ul>
+<li>Use <code>terraform</code> and optionally <code>terragrunt</code></li>
+<li>Automate provisioning via a CI/CD pipeline</li>
+<li>Store code in Git (mono- or multi-repo)</li>
+<li>Run a simple web crawler</li>
+<li>Output data to an S3 bucket</li>
+<li>Deploy the job to EKS in AWS</li>
+
+</ul>
+
+<aside class="notes">
+<p>
+This list should sound familiar to the audience — it sets the expectations and scope clearly before diving into architecture.
+</p>
+
+</aside>
+</section>
+</section>
+<section>
+<section id="slide-org84a51d3">
+<h2 id="org84a51d3">Architecture at a Glance</h2>
+<div class="outline-text-2" id="text-org84a51d3">
+</div>
+</section>
+<section id="slide-org108655b">
+<h3 id="org108655b">High-Level Diagram</h3>
+
+<div id="org2ae8081" class="figure">
+<p><img src="diagram.svg" alt="diagram.svg" class="org-svg" />
+</p>
+</div>
+
+<aside class="notes">
+<p>
+Visual overview to anchor the rest of the presentation.  
+CI/CD → EKS → Kubernetes Job → S3  
+Includes GitHub, OIDC, Terraform, and cloud services.
+</p>
+
+</aside>
+</section>
+<section id="slide-org76eb747">
+<h3 id="org76eb747">Flow Summary</h3>
+<ol>
+<li>Git push triggers GitHub Actions</li>
+<li>CI pipeline assumes AWS role using OIDC</li>
+<li>Terraform (via Terragrunt) provisions infra</li>
+<li>EKS cluster launches one-shot crawler job</li>
+<li>Job uploads result to S3</li>
+
+</ol>
+
+<aside class="notes">
+<p>
+Walk through these steps from a user/client perspective.  
+Reinforce automation, security, and reproducibility.
+</p>
+
+</aside>
+</section>
+</section>
+<section>
+<section id="slide-org70a69cc">
+<h2 id="org70a69cc">Infrastructure Management</h2>
+<div class="outline-text-2" id="text-org70a69cc">
+</div>
+</section>
+<section id="slide-orgeafb425">
+<h3 id="orgeafb425">Terragrunt Structure</h3>
+<p>
+The codebase is split into a reusable module layer and a <code>live/</code> layer using Terragrunt:
+</p>
+<ul>
+<li><code>live/&lt;env&gt;/&lt;region&gt;/&lt;component&gt;</code></li>
+<li>Each folder auto-detects its context</li>
+<li>Module sources are versioned and centralized</li>
+
+</ul>
+
+<aside class="notes">
+<p>
+Show how this structure helps onboarding and DRY code.  
+Explain separation of config and logic.
+</p>
+
+</aside>
+</section>
+<section id="slide-org1fab350">
+<h3 id="org1fab350">Directory layout</h3>
+<div class="org-src-container">
+
+<pre   ><code class="text" >.
+├── root.hcl
+├── live/
+│   └── demo/
+│       └── eu-central-1/
+│           ├── aws-data/
+│           ├── vpc-1/
+│           ├── eks-1/
+│           ├── crawler-job-1/
+│           ├── crawler-s3-1/
+│           └── github-oidc/
+├── modules/
+│   ├── aws-data/
+│   ├── crawler-job/
+│   └── github-oidc/
+</code></pre>
+</div>
+</section>
+<section id="slide-org7d4f361">
+<h3 id="org7d4f361">Root Logic Sample</h3>
+<p>
+The root-level Terragrunt configuration dynamically adjusts behavior based on directory structure and account context — making the setup environment- and region-aware without manual repetition.
+</p>
+
+</section>
+<section id="slide-org7d4f361-split">
+
+<p>
+It includes:
+</p>
+<ul>
+<li>Path introspection to extract environment, region, and component</li>
+<li>Dynamic S3/DynamoDB backend generation (per account)</li>
+<li>AWS provider configuration with consistent tagging</li>
+
+</ul>
+
+<aside class="notes">
+<p>
+Explain that this pattern allows any environment (e.g., dev/us-east-1/eks) to self-configure.  
+No need to hardcode region/account — it's extracted from path and AWS APIs.  
+This makes scaling across accounts and regions much easier in real-world setups.
+</p>
+
+</aside>
+</section>
+<section id="slide-org1d7baaa">
+<h4 id="org1d7baaa">locals</h4>
+<div class="org-src-container">
+
+<pre   ><code class="hcl" >locals {
+  path_parts = split("/", path_relative_to_include())
+
+  environment = local.path_parts[1]
+  region      = local.path_parts[2]
+  component   = local.path_parts[3]
+}
+</code></pre>
+</div>
+</section>
+<section id="slide-org4cf0f67">
+<h4 id="org4cf0f67">remote state</h4>
+<div class="org-src-container">
+
+<pre   ><code class="hcl" >remote_state {
+  backend = "s3"
+
+  generate = {
+    path      = "backend.tf"
+    if_exists = "overwrite"
+  }
+
+  config = {
+    encrypt        = true
+    region         = local.region
+    key            = format("%s/terraform.tfstate", path_relative_to_include())
+    bucket         = format("terraform-states-%s", get_aws_account_id())
+    dynamodb_table = format("terraform-states-%s", get_aws_account_id())
+  }
+}
+</code></pre>
+</div>
+</section>
+<section id="slide-org5a5614d">
+<h4 id="org5a5614d">generate aws provider</h4>
+<div class="org-src-container">
+
+<pre   ><code class="hcl" >generate "provider_aws" {
+  path      = "provider_aws.tf"
+  if_exists = "overwrite"
+  contents  = &lt;&lt;EOF
+provider "aws" {
+  region  = "${local.region}"
+
+  default_tags {
+    tags = {
+      Environment = "${local.environment}"
+      Region      = "${local.region}"
+      Component   = "${local.component}"
+      ManagedBy   = "terragrunt/terraform"
+    }
+  }
+}
+EOF
+}
+</code></pre>
+</div>
+</section>
+</section>
+<section>
+<section id="slide-org5c4d783">
+<h2 id="org5c4d783">Continuous Deployment</h2>
+<div class="outline-text-2" id="text-org5c4d783">
+</div>
+</section>
+<section id="slide-orgba9e82d">
+<h3 id="orgba9e82d">GitHub Actions</h3>
+<p>
+CI/CD is built with GitHub Actions and OpenID Connect:
+</p>
+<ul>
+<li>No AWS keys are stored</li>
+<li>Roles are assumed securely at runtime</li>
+<li>Terraform apply runs with permissions scoped per environment</li>
+
+</ul>
+
+<aside class="notes">
+<p>
+Mention security and audit compliance.  
+Highlight ease of use and GitHub-native flow.
+</p>
+
+</aside>
+</section>
+</section>
+<section>
+<section id="slide-orgb29205a">
+<h2 id="orgb29205a">Infrastructure Modules</h2>
+<div class="outline-text-2" id="text-orgb29205a">
+</div>
+</section>
+<section id="slide-org85c2f32">
+<h3 id="org85c2f32">aws-data</h3>
+<p>
+The <code>aws-data</code> module centralizes the retrieval of region-specific AWS metadata for consistent use across all other infrastructure modules.
+</p>
+
+</section>
+<section id="slide-org85c2f32-split">
+
+<p>
+It provides:
+</p>
+<ul>
+<li><code>data.aws_region</code> → current AWS region name and description</li>
+<li><code>data.aws_availability_zones</code> → list of AZ names and zone IDs</li>
+
+</ul>
+
+<p>
+This removes duplication, ensures reliability, and keeps modules clean from boilerplate region logic.
+</p>
+
+<p>
+The module is <b>easily extendable</b> to include:
+</p>
+<ul>
+<li><code>data.aws_caller_identity</code> → to expose AWS account ID and user context</li>
+
+</ul>
+
+<aside class="notes">
+<p>
+This module embodies the DRY principle — useful in consulting settings to reduce errors and improve reuse across multiple stacks or clients.
+Also helps future modules avoid hardcoding or duplicating data lookups.
+</p>
+
+</aside>
+</section>
+<section id="slide-orgc59899a">
+<h3 id="orgc59899a">github-oidc</h3>
+<p>
+The <code>github-oidc</code> module provisions an IAM role that allows GitHub Actions to securely authenticate to AWS without long-lived access keys.
+</p>
+
+</section>
+<section id="slide-orgc59899a-split">
+
+<p>
+It configures:
+</p>
+<ul>
+<li>An IAM role with trust policy for GitHub’s OIDC provider</li>
+<li>Conditions based on GitHub repository and branch (audience/subject)</li>
+<li>Minimal required permissions for Terraform plans and deployments</li>
+
+</ul>
+
+<p>
+Benefits:
+</p>
+<ul>
+<li>Eliminates secrets management in CI</li>
+<li>Strong security posture via short-lived tokens</li>
+<li>Fully GitOps-compatible with auditability</li>
+
+</ul>
+
+<aside class="notes">
+<p>
+This is critical for secure CI/CD in modern cloud environments.  
+GitHub’s native OIDC flow allows your pipeline to assume roles in AWS on-demand — no static credentials needed.  
+It’s clean, scalable, and avoids secret sprawl.
+</p>
+
+</aside>
+</section>
+<section id="slide-orgd6ec138">
+<h3 id="orgd6ec138">crawler-job</h3>
+<p>
+The <code>crawler-job</code> module provisions a one-time <code>Kubernetes Job</code> on an EKS cluster to run a containerized web crawler.
+</p>
+
+</section>
+<section id="slide-orgd6ec138-split">
+
+<p>
+It encapsulates:
+</p>
+<ul>
+<li>A Kubernetes Job spec using a public or custom Docker image</li>
+<li>Environment variable injection and runtime configuration</li>
+<li>Optional TTL and cleanup behavior</li>
+
+</ul>
+
+<p>
+Benefits:
+</p>
+<ul>
+<li>Decouples application logic from infrastructure logic</li>
+<li>Ensures reproducibility and isolation per crawl run</li>
+<li>Fully integrates with Terraform-based provisioning</li>
+
+</ul>
+
+<aside class="notes">
+<p>
+This module is tailored for one-off batch tasks in EKS — perfect for ETL, scraping, or similar jobs.  
+The advantage is full automation: from cluster provisioning to job execution, all via infrastructure-as-code.  
+You can adapt it easily for future use cases, like cron jobs or multi-step workflows.
+</p>
+
+</aside>
+</section>
+</section>
+<section>
+<section id="slide-org597d764">
+<h2 id="org597d764">Developer Experience</h2>
+<div class="outline-text-2" id="text-org597d764">
+</div>
+</section>
+<section id="slide-org30dacd6">
+<h3 id="org30dacd6">Nix Environment</h3>
+<p>
+Using <code>nix develop</code> ensures consistent tools:
+</p>
+<ul>
+<li><code>terraform</code>, <code>terragrunt</code>, <code>kubectl</code>, <code>awscli</code></li>
+<li>Works identically in CI and on local machines</li>
+
+</ul>
+
+<aside class="notes">
+<p>
+Less friction during onboarding or audits.  
+Future team members will appreciate this.
+</p>
+
+</aside>
+</section>
+<section id="slide-orga5bf2d8">
+<h3 id="orga5bf2d8">Local Testing</h3>
+<ul>
+<li>The <code>nix develop</code> shell offers a reproducible environment for hands-on work
+<ul>
+<li>From there, you can run arbitrary <code>terragrunt</code> commands (e.g. <code>plan</code>, <code>apply</code>, <code>destroy</code>)</li>
+
+</ul></li>
+<li>Nix apps like:
+<ul>
+<li><code>nix run .#validate</code></li>
+<li><code>nix run .#apply</code>
+can be run outside the <code>nix develop</code> shell as well</li>
+
+</ul></li>
+
+</ul>
+
+<aside class="notes">
+<p>
+Helps debugging and confidence during delivery.
+</p>
+
+</aside>
+</section>
+</section>
+<section>
+<section id="slide-orgf710189">
+<h2 id="orgf710189">Presentation as Code</h2>
+<p>
+This presentation was written entirely in <code>Org Mode</code> and exported with <code>ox-reveal</code> to Reveal.js HTML.
+</p>
+
+<ul>
+<li>Edited and versioned in Git</li>
+<li>Live-previewed locally in Emacs</li>
+<li>Structured, reproducible, and hackable</li>
+<li>Reflects the same IaC principles presented here</li>
+
+</ul>
+
+<aside class="notes">
+<p>
+A fitting conclusion before Q&amp;A: Not just the infrastructure, but also the delivery itself is code-based.
+This shows my consistency in applying IaC values — even to client-facing material.
+</p>
+
+</aside>
+</section>
+</section>
+<section>
+<section id="slide-org7ff6091">
+<h2 id="org7ff6091">Consulting Value</h2>
+<div class="outline-text-2" id="text-org7ff6091">
+</div>
+</section>
+<section id="slide-orgee9dbf8">
+<h3 id="orgee9dbf8">Business Impact</h3>
+<ul>
+<li>Secure, reproducible, modular infrastructure</li>
+<li>Ready to scale to multi-region, multi-account setups</li>
+<li>Aligned with GitOps and compliance needs</li>
+
+</ul>
+</section>
+<section id="slide-orgc285f40">
+<h3 id="orgc285f40">Extendability</h3>
+<ul>
+<li>Add Fargate support</li>
+<li>Support multiple job types (e.g. periodic, chained workflows)</li>
+
+</ul>
+
+<aside class="notes">
+<p>
+Position the solution as a blueprint for future teams and clients.
+</p>
+
+</aside>
+</section>
+</section>
+<section>
+<section id="slide-orge0816e3">
+<h2 id="orge0816e3">Summary &amp; Q&amp;A</h2>
+<div class="outline-text-2" id="text-orge0816e3">
+</div>
+</section>
+<section id="slide-org1af9aa6">
+<h3 id="org1af9aa6">Recap</h3>
+<ul>
+<li>You’ve seen a real-world, production-ready solution</li>
+<li>Security, scalability, and consulting mindset were key</li>
+
+</ul>
+</section>
+<section id="slide-org30a45bb">
+<h3 id="org30a45bb">Questions welcome</h3>
+<aside class="notes">
+<p>
+Invite dialogue, welcome technical or strategic questions.
+</p>
+
+</aside>
+</section>
+</section>
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.2.1/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.2.1/plugin/highlight/highlight.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.2.1/plugin/notes/notes.js"></script>
+
+
+<script>
+// Full list of configuration options available here:
+// https://github.com/hakimel/reveal.js#configuration
+Reveal.initialize({
+plugins: [RevealHighlight, RevealNotes]
+});
+
+</script>
+</body>
+</html>
